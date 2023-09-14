@@ -1,4 +1,4 @@
-package main
+package justgarble
 
 import (
 	"math/rand"
@@ -69,17 +69,23 @@ func MakeCircuit3() *Circuit {
 func TestEvalCircuit(t *testing.T) {
 	c := MakeCircuit3()
 	g := GarblerImpl{}
-	gc := g.Garble(c)
+	gc, err := g.Garble(c)
+	if err != nil {
+		t.Error(("unexpected error"))
+	}
 
 	inputs := []bool{true, false, true, true}
-	outputs := g.Eval(gc, inputs)
+	outputs, err := g.Eval(gc, inputs)
+	if err != nil {
+		t.Error(("unexpected error"))
+	}
 	outputs2 := c.evalCircuit(inputs)
 	if len(outputs) != len(outputs2) {
-		t.Error("FAILED")
+		t.Error("mismatched output length")
 	}
 	for i := 0; i < len(outputs); i++ {
 		if outputs[i] != outputs2[i] {
-			t.Error("FAILED")
+			t.Error("mismatched output")
 		}
 	}
 
@@ -98,7 +104,10 @@ func TestXorGateGarble(t *testing.T) {
 
 	c := MakeRandomCircuit(n, m, q)
 	g := GarblerImpl{}
-	gc := g.Garble(c)
+	gc, err := g.Garble(c)
+	if err != nil {
+		t.Error(("unexpected error"))
+	}
 
 	for i := 0; i < c.q; i++ {
 		leftWire := gc.AllWires[c.A[i]]
@@ -122,8 +131,16 @@ func TestEvalRandomCircuit(t *testing.T) {
 		c := MakeRandomCircuit(n, m, q)
 		randomInputs(inputs)
 		g := GarblerImpl{}
-		gc := g.Garble(c)
-		outputs := g.Eval(gc, inputs)
+		gc, err := g.Garble(c)
+		if err != nil {
+			t.Error(("unexpected error"))
+		}
+
+		outputs, err := g.Eval(gc, inputs)
+		if err != nil {
+			t.Error(("unexpected error"))
+		}
+
 		outputs2 := c.evalCircuit(inputs)
 		for i := 0; i < len(outputs); i++ {
 			if outputs[i] != outputs2[i] {
