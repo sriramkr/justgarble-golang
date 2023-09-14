@@ -1,9 +1,8 @@
-package main
+package justgarble
 
 import (
 	"crypto/aes"
 	"crypto/cipher"
-	"log"
 )
 
 type FixedKeyCipher interface {
@@ -16,14 +15,14 @@ type FixedKeyCipherReal struct {
 	output [16]byte
 }
 
-func MakeNewFixedKeyCipher(key []byte) *FixedKeyCipherReal {
+func MakeNewFixedKeyCipher(key []byte) (*FixedKeyCipherReal, error) {
 	f := new(FixedKeyCipherReal)
 	var err error
 	f.c, err = aes.NewCipher(key)
 	if err != nil {
-		log.Fatalf("error while generating random string: %s", err)
+		return nil, err
 	}
-	return f
+	return f, nil
 }
 
 func (f *FixedKeyCipherReal) CreateMask(A, B Wire, T int) Wire {

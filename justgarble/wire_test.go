@@ -1,4 +1,4 @@
-package main
+package justgarble
 
 import (
 	"math/rand"

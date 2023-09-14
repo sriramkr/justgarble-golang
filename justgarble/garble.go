@@ -1,4 +1,4 @@
-package main
+package justgarble
 
 type GarbledCircuit struct {
 	Circuit          Circuit
@@ -18,25 +18,28 @@ type Garbler interface {
 type GarblerImpl struct {
 }
 
-func (g *GarblerImpl) Garble(circuit *Circuit) *GarbledCircuit {
+func (g *GarblerImpl) Garble(circuit *Circuit) (*GarbledCircuit, error) {
 	return g.GarbleInternal(circuit, AndGateGarbler)
 }
 
-func (g *GarblerImpl) GarbleInternal(circuit *Circuit, andGateGarbler func(Wire, Wire, Wire, Wire, int, FixedKeyCipher, []Wire)) *GarbledCircuit {
+func (g *GarblerImpl) GarbleInternal(circuit *Circuit, andGateGarbler func(Wire, Wire, Wire, Wire, int, FixedKeyCipher, []Wire)) (*GarbledCircuit, error) {
 	gc := new(GarbledCircuit)
 	gc.Circuit = *circuit
 	gc.Gates = make([]Wire, circuit.q*4)
 	var err error
 	gc.Masterkey, err = NewKey()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	gc.InputWires = make([]Wire, circuit.n)
 	gc.AllWires = make([]Wire, circuit.n+circuit.q)
 	gc.OutputShouldFlip = make([]bool, circuit.m)
 	gc.R = NewWireWithLsb1()
 
-	f := MakeNewFixedKeyCipher(gc.Masterkey)
+	f, err := MakeNewFixedKeyCipher(gc.Masterkey)
+	if err != nil {
+		return nil, err
+	}
 
 	for i := 0; i < circuit.n; i++ {
 		wire0 := NewWire()
@@ -60,7 +63,7 @@ func (g *GarblerImpl) GarbleInternal(circuit *Circuit, andGateGarbler func(Wire,
 	for i := 0; i < circuit.m; i++ {
 		gc.OutputShouldFlip[i] = (gc.AllWires[outputOffset+i].lsb() == 1)
 	}
-	return gc
+	return gc, nil
 }
 
 func AndGateGarbler(leftWire, rightWire, outputWire, R Wire, i int, f FixedKeyCipher, w []Wire) {
@@ -104,9 +107,12 @@ func AndGateGarbler(leftWire, rightWire, outputWire, R Wire, i int, f FixedKeyCi
 	w[offset+(a<<1+b)].copyFrom(&ow11)
 }
 
-func (g *GarblerImpl) Eval(gc *GarbledCircuit, inputs []bool) []bool {
+func (g *GarblerImpl) Eval(gc *GarbledCircuit, inputs []bool) ([]bool, error) {
 	allWires := make([]Wire, gc.Circuit.n+gc.Circuit.q)
-	f := MakeNewFixedKeyCipher(gc.Masterkey)
+	f, err := MakeNewFixedKeyCipher(gc.Masterkey)
+	if err != nil {
+		return nil, err
+	}
 
 	for i := 0; i < gc.Circuit.n; i++ {
 		if inputs[i] {
@@ -141,5 +147,5 @@ func (g *GarblerImpl) Eval(gc *GarbledCircuit, inputs []bool) []bool {
 			outputs[i] = !outputs[i]
 		}
 	}
-	return outputs
+	return outputs, nil
 }
